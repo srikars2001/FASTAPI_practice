@@ -3,6 +3,7 @@ from .. import models,schemas,utils,oauth2
 from fastapi import FastAPI,Response,status,HTTPException,Depends,APIRouter
 from fastapi.params import *
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 from ..database import engine,get_db
 from typing import List
 
@@ -13,14 +14,18 @@ router = APIRouter(
 
 
 
-@router.get("/",response_model=List[schemas.Post])
+@router.get("/",response_model=List[schemas.PostOut])
 async def get_posts(db : Session = Depends(get_db),current_user : int = Depends(oauth2.get_current_user),limit:int = 10,skip:int = 0,search: Optional[str] = ""): 
     #cursor.execute("""SELECT * FROM posts""")
     #posts = cursor.fetchall()
     #return {"data" : posts}
-    print(search)
-    print("@post.py get current user - >",current_user)
-    posts = db.query(models.Post).filter(models.Post.title.contains(search)).limit(limit).offset(skip).all()
+    #print(search)
+    #print("@post.py get current user - >",current_user)
+    #posts = db.query(models.Post).filter(models.Post.title.contains(search)).limit(limit).offset(skip).all()
+    
+    posts = db.query(models.Post,func.count(models.Vote.post_id).label("votes")).join(models.Vote,models.Vote.post_id == models.Post.id,isouter = True).group_by(models.Post.id).filter(models.Post.title.contains(search)).limit(limit).offset(skip).all()
+
+    #print(posts)
     return posts
 
 
@@ -43,13 +48,16 @@ async def create_posts(post : schemas.PostCreate , db:Session = Depends(get_db),
     db.refresh(new_post)
     return new_post
 
-@router.get("/{id}",response_model=schemas.Post)
+@router.get("/{id}",response_model=schemas.PostOut)
 def get_post(id:int , db : Session = Depends(get_db),current_user : int = Depends(oauth2.get_current_user)):
 
     #cursor.execute("""SELECT * FROM posts WHERE id = %s """,(str(id)) )
     #test_post = cursor.fetchone()
 
-    test_post = db.query(models.Post).filter(models.Post.id == str(id)).first()
+    test_post = db.query(models.Post,func.count(models.Vote.post_id).label("votes")).join(
+            models.Vote,models.Vote.post_id == models.Post.id,isouter = True).group_by(models.Post.id).filter(models.Post.id == str(id)).first()
+
+    #test_post = db.query(models.Post).filter(models.Post.id == str(id)).first()
 
     if not test_post:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
