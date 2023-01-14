@@ -15,4 +15,4 @@ class Settings(BaseSettings):
 
 settings = Settings()
 
-print(settings.database_username)
+print("\n\n",settings.database_username,settings.database_password,settings.database_port,settings.database_username,"\n\n")

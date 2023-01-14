@@ -8,6 +8,7 @@ from .config import settings
 from fastapi.middleware.cors import CORSMiddleware
 
 #models.Base.metadata.create_all(bind=engine)
+print(settings.algorithm,settings.database_hostname,settings.database_password)
 
 app = FastAPI()
 
@@ -30,4 +31,4 @@ app.include_router(vote.router)
 
 @app.get("/")
 async def root():
-    return {"msg" : "welcome to my api"}
+    return {"msg" : "welco  jgjgme to mys api"}
